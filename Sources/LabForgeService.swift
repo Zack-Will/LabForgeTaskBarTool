@@ -41,6 +41,41 @@ struct LabForgeService {
         return try decoder.decode(BudgetStatusPayload.self, from: data)
     }
 
+    func fetchNotices() async throws -> NoticePayload {
+        let url = URL(string: "https://www.labforge.top/")!
+        let (data, response) = try await session.data(from: url)
+        try validate(response: response)
+
+        guard let html = String(data: data, encoding: .utf8) else {
+            throw LabForgeServiceError.invalidNoticePayload
+        }
+
+        let pattern = #"const\s+NOTICE_ITEMS\s*=\s*\[(.*?)\];"#
+        let regex = try NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators])
+        let range = NSRange(html.startIndex..<html.endIndex, in: html)
+        guard
+            let match = regex.firstMatch(in: html, options: [], range: range),
+            let itemsRange = Range(match.range(at: 1), in: html)
+        else {
+            throw LabForgeServiceError.invalidNoticePayload
+        }
+
+        let rawItems = String(html[itemsRange])
+        let itemPattern = #""((?:\\"|[^"])*)""#
+        let itemRegex = try NSRegularExpression(pattern: itemPattern)
+        let itemRange = NSRange(rawItems.startIndex..<rawItems.endIndex, in: rawItems)
+        let notices = itemRegex.matches(in: rawItems, options: [], range: itemRange).compactMap { match -> String? in
+            guard let captured = Range(match.range(at: 1), in: rawItems) else { return nil }
+            return String(rawItems[captured]).replacingOccurrences(of: #"\""#, with: #"""#)
+        }
+
+        guard !notices.isEmpty else {
+            throw LabForgeServiceError.invalidNoticePayload
+        }
+
+        return NoticePayload(items: notices)
+    }
+
     private func validate(response: URLResponse) throws {
         guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
             throw LabForgeServiceError.badServerResponse
@@ -59,6 +94,7 @@ struct LabForgeService {
 enum LabForgeServiceError: LocalizedError {
     case badServerResponse
     case invalidLeaderboardPayload
+    case invalidNoticePayload
 
     var errorDescription: String? {
         switch self {
@@ -66,6 +102,8 @@ enum LabForgeServiceError: LocalizedError {
             return "LabForge server returned an unexpected response."
         case .invalidLeaderboardPayload:
             return "Could not parse leaderboard data."
+        case .invalidNoticePayload:
+            return "Could not parse notice data."
         }
     }
 }

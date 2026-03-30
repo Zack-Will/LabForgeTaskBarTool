@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.1.2] - 2026-03-30
+
+### Added
+
+- Added announcement display based on the latest LabForge homepage notices
+- Added a marquee-style announcement banner inside the popover
+
+### Changed
+
+- Synced the budget section with the latest LabForge website schema and copy
+
+### Fixed
+
+- Fixed announcement text clipping so marquee content stays inside the rounded container
+
 ## [0.1.1] - 2026-03-29
 
 ### Fixed

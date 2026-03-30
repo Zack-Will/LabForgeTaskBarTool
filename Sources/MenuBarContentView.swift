@@ -8,6 +8,7 @@ struct MenuBarContentView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 header
+                noticeSection
                 budgetSection
                 recentStatusSection
                 if viewModel.showLeaderboard {
@@ -100,6 +101,38 @@ struct MenuBarContentView: View {
         }
     }
 
+    private var noticeSection: some View {
+        Group {
+            if !viewModel.notices.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Announcements")
+                        .font(.subheadline.weight(.semibold))
+
+                    HStack(spacing: 10) {
+                        Text("公告")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.blue.opacity(0.12))
+                            .foregroundStyle(Color.blue)
+                            .clipShape(Capsule())
+
+                        NoticeTickerView(items: viewModel.notices)
+                            .frame(height: 20)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .clipped()
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.secondary.opacity(0.08))
+                    )
+                }
+            }
+        }
+    }
+
     private var budgetSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Model Remaining")
@@ -108,20 +141,27 @@ struct MenuBarContentView: View {
             if let budget = viewModel.budgetStatus {
                 HStack(spacing: 10) {
                     budgetCard(
-                        title: budget.gpt.label,
+                        title: budget.gpt.title,
                         tint: Color.green,
                         channel: budget.gpt
                     )
                     budgetCard(
-                        title: budget.claude.label,
-                        tint: Color.orange,
+                        title: budget.claude.title,
+                        tint: Color.blue,
                         channel: budget.claude
                     )
                 }
 
-                Text("Budget updated: \(budget.updatedAt)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Budget updated: \(budget.updatedAt)")
+                    if let windowStart = budget.windowStart, let windowEnd = budget.windowEnd {
+                        Text("Window: \(windowStart) -> \(windowEnd)")
+                    } else if let resetHour = budget.resetHour {
+                        Text("Reset hour: \(resetHour):00")
+                    }
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
             } else {
                 ProgressView()
                     .controlSize(.small)
@@ -250,8 +290,14 @@ struct MenuBarContentView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(size: 12, weight: .semibold))
+            if let description = channel.description {
+                Text(description)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
 
-            Text("\(channel.remaining, specifier: "%.1f") / \(channel.budget, specifier: "%.0f")")
+            Text("$\(channel.spent, specifier: "%.2f") / $\(channel.budget, specifier: "%.0f")")
                 .font(.system(size: 16, weight: .bold, design: .rounded))
 
             GeometryReader { proxy in
@@ -265,7 +311,7 @@ struct MenuBarContentView: View {
             }
             .frame(height: 8)
 
-            Text("Used \(channel.spent, specifier: "%.1f") (\(channel.usageRatio * 100, specifier: "%.0f")%)")
+            Text("Remaining $\(channel.remaining, specifier: "%.2f") • \(channel.usageRatio * 100, specifier: "%.0f")% used")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
@@ -275,5 +321,62 @@ struct MenuBarContentView: View {
             RoundedRectangle(cornerRadius: 10)
                 .fill(Color.secondary.opacity(0.08))
         )
+    }
+}
+
+struct NoticeTickerView: View {
+    let items: [String]
+
+    @State private var offset: CGFloat = 0
+    @State private var contentWidth: CGFloat = 0
+
+    private var tickerText: String {
+        items.joined(separator: "   •   ")
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            let repeatedText = tickerText + "   •   " + tickerText
+
+            ZStack(alignment: .leading) {
+                Text(repeatedText)
+                    .font(.system(size: 12, weight: .medium))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .offset(x: offset)
+                    .background(
+                        GeometryReader { textProxy in
+                            Color.clear
+                                .onAppear {
+                                    let measured = measureTextWidth(tickerText + "   •   ")
+                                    contentWidth = measured
+                                    startAnimation(containerWidth: geometry.size.width)
+                                }
+                                .onChange(of: geometry.size.width) { _, newWidth in
+                                    startAnimation(containerWidth: newWidth)
+                                }
+                        }
+                    )
+            }
+            .frame(width: geometry.size.width, alignment: .leading)
+            .clipped()
+        }
+    }
+
+    private func startAnimation(containerWidth: CGFloat) {
+        guard contentWidth > 0, containerWidth > 0 else { return }
+        offset = containerWidth
+        let travel = containerWidth + contentWidth
+        let duration = max(12, Double(travel / 28))
+        withAnimation(.linear(duration: duration).repeatForever(autoreverses: false)) {
+            offset = -contentWidth
+        }
+    }
+
+    private func measureTextWidth(_ text: String) -> CGFloat {
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 12, weight: .medium)
+        ]
+        return ceil((text as NSString).size(withAttributes: attributes).width)
     }
 }

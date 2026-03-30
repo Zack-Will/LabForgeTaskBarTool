@@ -12,6 +12,7 @@ final class MenuBarViewModel: ObservableObject {
     @Published private(set) var modelStatus: ModelStatusPayload?
     @Published private(set) var leaderboard: LeaderboardPayload?
     @Published private(set) var budgetStatus: BudgetStatusPayload?
+    @Published private(set) var notices: [String] = []
     @Published private(set) var isRefreshing = false
     @Published private(set) var lastError: String?
     @Published var launchAtLoginEnabled = false
@@ -63,6 +64,8 @@ final class MenuBarViewModel: ObservableObject {
             self.modelStatus = try await status
             self.leaderboard = try await leaderboard
             self.budgetStatus = try await budget
+            let fetchedNotices = try? await service.fetchNotices()
+            self.notices = fetchedNotices?.items ?? self.notices
             self.lastError = nil
         } catch {
             self.lastError = error.localizedDescription

@@ -106,11 +106,17 @@ struct LeaderboardEntry: Decodable, Identifiable {
 struct BudgetStatusPayload: Decodable {
     let gpt: BudgetChannel
     let claude: BudgetChannel
+    let windowStart: String?
+    let windowEnd: String?
+    let resetHour: Int?
     let updatedAt: String
 
     enum CodingKeys: String, CodingKey {
         case gpt
         case claude
+        case windowStart = "window_start"
+        case windowEnd = "window_end"
+        case resetHour = "reset_hour"
         case updatedAt = "updated_at"
     }
 }
@@ -118,10 +124,30 @@ struct BudgetStatusPayload: Decodable {
 struct BudgetChannel: Decodable, Identifiable {
     let spent: Double
     let budget: Double
-    let label: String
+    let title: String
+    let description: String?
     let channel: String?
 
-    var id: String { label }
+    enum CodingKeys: String, CodingKey {
+        case spent
+        case budget
+        case title
+        case label
+        case description
+        case channel
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        spent = try container.decode(Double.self, forKey: .spent)
+        budget = try container.decode(Double.self, forKey: .budget)
+        title = try container.decodeIfPresent(String.self, forKey: .title)
+            ?? container.decode(String.self, forKey: .label)
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        channel = try container.decodeIfPresent(String.self, forKey: .channel)
+    }
+
+    var id: String { title }
 
     var remaining: Double {
         max(0, budget - spent)
@@ -131,4 +157,8 @@ struct BudgetChannel: Decodable, Identifiable {
         guard budget > 0 else { return 0 }
         return min(max(spent / budget, 0), 1)
     }
+}
+
+struct NoticePayload {
+    let items: [String]
 }
