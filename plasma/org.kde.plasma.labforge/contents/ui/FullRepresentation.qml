@@ -8,25 +8,37 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.plasma.plasmoid
 
-PlasmaExtras.Representation {
-    id: root
+    PlasmaExtras.Representation {
+        id: root
 
     required property PlasmoidItem plasmoidItem
     required property var appState
+
+    component TextActionButton: QQC2.Button {
+        flat: true
+        hoverEnabled: true
+        leftPadding: 0
+        rightPadding: 0
+        topPadding: 0
+        bottomPadding: 0
+
+        background: Item {}
+
+        contentItem: Text {
+            text: parent.text
+            color: parent.enabled
+                ? (parent.hovered ? Kirigami.Theme.highlightColor : Kirigami.Theme.textColor)
+                : Kirigami.Theme.disabledTextColor
+            font.pixelSize: 12
+            font.weight: Font.DemiBold
+        }
+    }
 
     collapseMarginsHint: true
     Layout.minimumWidth: 560
     Layout.maximumWidth: 560
     Layout.minimumHeight: column.implicitHeight + 24
     Layout.maximumHeight: column.implicitHeight + 24
-
-    Rectangle {
-        anchors.fill: parent
-        radius: 24
-        color: Kirigami.Theme.alternateBackgroundColor
-        border.color: Qt.alpha(Kirigami.Theme.textColor, 0.12)
-        border.width: 1
-    }
 
     ColumnLayout {
         id: column
@@ -56,13 +68,13 @@ PlasmaExtras.Representation {
 
             Item { Layout.fillWidth: true }
 
-            QQC2.Button {
+            TextActionButton {
                 text: root.appState.loading ? "Refreshing..." : "Refresh"
                 enabled: !root.appState.loading
                 onClicked: root.plasmoidItem.refreshRequested()
             }
 
-            QQC2.Button {
+            TextActionButton {
                 text: "Open"
                 onClicked: Qt.openUrlExternally("https://www.labforge.top/#model-status")
             }

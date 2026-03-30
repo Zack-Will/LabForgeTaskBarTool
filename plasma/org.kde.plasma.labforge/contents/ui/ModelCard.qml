@@ -15,7 +15,7 @@ Rectangle {
     color: Kirigami.Theme.backgroundColor
     border.color: Qt.alpha(Kirigami.Theme.textColor, 0.12)
     border.width: 1
-    implicitHeight: 96
+    implicitHeight: 74
 
     readonly property color upColor: "#1f9d62"
     readonly property color downColor: "#d64545"
@@ -36,6 +36,7 @@ Rectangle {
 
         RowLayout {
             Layout.fillWidth: true
+            spacing: 8
 
             Text {
                 text: root.modelInfo ? root.modelInfo.name : "Model"
@@ -45,6 +46,34 @@ Rectangle {
             }
 
             Item { Layout.fillWidth: true }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+
+                Text {
+                    text: root.modelInfo ? ("Latency " + root.modelInfo.latencyMs + " ms") : "Latency --"
+                    color: Kirigami.Theme.disabledTextColor
+                    font.pixelSize: 10
+                    font.weight: Font.DemiBold
+                }
+
+                Repeater {
+                    model: [
+                        root.modelInfo ? (root.modelInfo.successCount + "/" + root.modelInfo.totalCount + " success") : "",
+                        "Avail " + root.successRatePct.toFixed(2) + "%"
+                    ]
+
+                    Text {
+                        required property string modelData
+
+                        text: modelData
+                        color: root.availabilityColor
+                        font.pixelSize: 10
+                        font.weight: Font.DemiBold
+                    }
+                }
+            }
 
             Rectangle {
                 radius: 9
@@ -61,37 +90,6 @@ Rectangle {
                     font.weight: Font.DemiBold
                 }
             }
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 8
-
-            Text {
-                text: root.modelInfo ? ("Latency " + root.modelInfo.latencyMs + " ms") : "Latency --"
-                color: Kirigami.Theme.disabledTextColor
-                font.pixelSize: 10
-                font.weight: Font.DemiBold
-            }
-
-            Item { Layout.fillWidth: true }
-
-            Repeater {
-                model: [
-                    root.modelInfo ? (root.modelInfo.successCount + "/" + root.modelInfo.totalCount + " success") : "",
-                    "Avail " + root.successRatePct.toFixed(2) + "%"
-                ]
-
-                Text {
-                    required property string modelData
-
-                    text: modelData
-                    color: root.availabilityColor
-                    font.pixelSize: 10
-                    font.weight: Font.DemiBold
-                }
-            }
-
         }
 
         RowLayout {
