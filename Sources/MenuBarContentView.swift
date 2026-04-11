@@ -60,45 +60,73 @@ struct MenuBarContentView: View {
 
     private var leaderboardSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Top 3 Leaderboard")
-                .font(.subheadline.weight(.semibold))
+            HStack {
+                Text("Leaderboard")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                if !viewModel.leaderboardEntries.isEmpty {
+                    Text("\(viewModel.leaderboardEntries.count) entries")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
 
-            if viewModel.topThreeEntries.isEmpty {
+            if viewModel.leaderboardEntries.isEmpty {
                 ProgressView()
                     .controlSize(.small)
             } else {
-                ForEach(Array(viewModel.topThreeEntries.enumerated()), id: \.element.id) { index, entry in
-                    HStack(spacing: 10) {
-                        Text("#\(index + 1)")
-                            .font(.system(.caption, design: .rounded).weight(.bold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 24, alignment: .leading)
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(entry.alias)
-                                .font(.system(size: 13, weight: .medium))
-                            Text("\(entry.tokens.formatted()) tokens")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        Spacer()
-
-                        let claude = entry.claudeTokens ?? 0
-                        let gpt = entry.gptTokens ?? 0
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Text("C \(claude.formatted())")
-                                .font(.system(.caption2, design: .monospaced))
-                                .foregroundStyle(.orange)
-                            Text("G \(gpt.formatted())")
-                                .font(.system(.caption2, design: .monospaced))
-                                .foregroundStyle(.green)
+                let entries = viewModel.leaderboardEntries
+                ScrollView(.vertical) {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        ForEach(Array(entries.enumerated()), id: \.offset) { index, entry in
+                            leaderboardRow(index: index, entry: entry)
+                            if index < entries.count - 1 {
+                                Divider()
+                            }
                         }
                     }
-                    .padding(.vertical, 2)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
                 }
+                .frame(height: min(CGFloat(entries.count) * 44, 260))
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.secondary.opacity(0.08))
+                )
             }
         }
+    }
+
+    private func leaderboardRow(index: Int, entry: LeaderboardEntry) -> some View {
+        HStack(spacing: 10) {
+            Text("#\(index + 1)")
+                .font(.system(.caption, design: .rounded).weight(.bold))
+                .foregroundStyle(.secondary)
+                .frame(width: 34, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.alias)
+                    .font(.system(size: 13, weight: .medium))
+                    .lineLimit(1)
+                Text("\(entry.tokens.formatted()) tokens")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            let claude = entry.claudeTokens ?? 0
+            let gpt = entry.gptTokens ?? 0
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("C \(claude.formatted())")
+                    .font(.system(.caption2, design: .monospaced))
+                    .foregroundStyle(.orange)
+                Text("G \(gpt.formatted())")
+                    .font(.system(.caption2, design: .monospaced))
+                    .foregroundStyle(.green)
+            }
+        }
+        .padding(.vertical, 6)
     }
 
     private var noticeSection: some View {
@@ -191,24 +219,26 @@ struct MenuBarContentView: View {
                                     .font(.system(.caption, design: .monospaced))
                                 Text(model.successRate, format: .percent.precision(.fractionLength(0)))
                                     .font(.caption2)
-                                    .foregroundStyle(model.isUp ? Color.secondary : Color.red)
+                                    .foregroundStyle(model.status == .ok ? Color.secondary : color(for: model.status))
                             }
-                            Text(model.isUp ? "OK" : "FAIL")
+
+                            let statusColor = color(for: model.status)
+                            Text(model.status.label)
                                 .font(.system(size: 10, weight: .semibold, design: .rounded))
                                 .padding(.horizontal, 7)
                                 .padding(.vertical, 3)
-                                .background(model.isUp ? Color.green.opacity(0.14) : Color.red.opacity(0.14))
-                                .foregroundStyle(model.isUp ? Color.green : Color.red)
+                                .background(statusColor.opacity(0.14))
+                                .foregroundStyle(statusColor)
                                 .clipShape(Capsule())
                         }
 
                         HStack(spacing: 2) {
                             ForEach(Array(model.recentProbes.enumerated()), id: \.offset) { _, probe in
                                 RoundedRectangle(cornerRadius: 3)
-                                    .fill(probe.ok ? Color.green : Color.red)
+                                    .fill(color(for: probe.status))
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 18)
-                                    .help("\(probe.ok ? "OK" : "FAIL") • \(probe.ms) ms • \(probe.timestamp)")
+                                    .help("\(probe.status.label) • \(probe.ms) ms • \(probe.timestamp)")
                             }
                         }
 
@@ -238,6 +268,17 @@ struct MenuBarContentView: View {
         let start = raw.index(raw.startIndex, offsetBy: 11)
         let end = raw.index(raw.startIndex, offsetBy: 16)
         return String(raw[start..<end])
+    }
+
+    private func color(for status: ModelProbeStatus) -> Color {
+        switch status {
+        case .ok:
+            return .green
+        case .budget:
+            return .gray
+        case .error, .unknown:
+            return .red
+        }
     }
 
     private var footer: some View {

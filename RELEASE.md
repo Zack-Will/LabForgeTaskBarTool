@@ -1,21 +1,20 @@
 # Release Notes
 
-## v0.1.2
+## v0.1.3
 
-Patch release for `LabForgeTaskBarTool`.
-
-### Added
-
-- Added homepage announcement support
-- Added marquee-style announcement banner in the popover
+Patch release for `LabForgeMenuBar`.
 
 ### Changed
 
-- Synced the model remaining section with the latest LabForge website fields and wording
+- Added compatibility for the current model status feed schema that uses `s` status values
+- Added direct `notices.json` support with homepage fallback for announcements
+- Changed leaderboard display from top-three only to a nested scroll list of all entries
+- Made refreshes preserve successfully fetched sections when another feed fails
 
-### Fixed
+### Documentation
 
-- Fixed announcement marquee clipping so text remains inside the rounded banner
+- Renamed README references from `LabForgeTaskBarTool` to `LabForgeMenuBar`
+- Documented the `notices.json` data source and full leaderboard list
 
 ### Included Artifacts
 

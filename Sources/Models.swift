@@ -34,15 +34,58 @@ struct MonitoredModel: Decodable {
     let history: [ModelProbe]
 }
 
+enum ModelProbeStatus: String, Decodable {
+    case ok
+    case budget
+    case error
+    case unknown
+
+    var isUp: Bool {
+        self == .ok
+    }
+
+    var label: String {
+        switch self {
+        case .ok:
+            return "OK"
+        case .budget:
+            return "BUDGET"
+        case .error:
+            return "FAIL"
+        case .unknown:
+            return "UNKNOWN"
+        }
+    }
+}
+
 struct ModelProbe: Decodable {
     let timestamp: String
-    let ok: Bool
+    let status: ModelProbeStatus
     let ms: Int
 
     enum CodingKeys: String, CodingKey {
         case timestamp = "t"
+        case status = "s"
         case ok
         case ms
+    }
+
+    var ok: Bool {
+        status.isUp
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        timestamp = try container.decode(String.self, forKey: .timestamp)
+        ms = try container.decode(Int.self, forKey: .ms)
+
+        if let rawStatus = try container.decodeIfPresent(String.self, forKey: .status) {
+            status = ModelProbeStatus(rawValue: rawStatus) ?? .unknown
+        } else if let legacyOK = try container.decodeIfPresent(Bool.self, forKey: .ok) {
+            status = legacyOK ? .ok : .error
+        } else {
+            status = .unknown
+        }
     }
 }
 
@@ -51,22 +94,28 @@ struct MonitoredModelSummary: Identifiable {
     let name: String
     let provider: String
     let latencyMS: Int
+    let status: ModelProbeStatus
     let successRate: Double
+    let budgetCount: Int
     let isUp: Bool
     let recentProbes: [ModelProbe]
     let latestTimestamp: String
 
     init(id: String, model: MonitoredModel) {
+        let latestProbe = model.history.last
+
         self.id = id
         self.name = model.name
         self.provider = model.provider
-        self.latencyMS = model.history.last?.ms ?? 0
-        self.isUp = model.history.last?.ok ?? false
+        self.latencyMS = latestProbe?.ms ?? 0
+        self.status = latestProbe?.status ?? .unknown
+        self.isUp = status.isUp
         self.recentProbes = Array(model.history.suffix(60))
-        self.latestTimestamp = model.history.last?.timestamp ?? "--"
+        self.latestTimestamp = latestProbe?.timestamp ?? "--"
 
         let total = Double(model.history.count)
         let success = Double(model.history.filter(\.ok).count)
+        self.budgetCount = model.history.filter { $0.status == .budget }.count
         self.successRate = total > 0 ? success / total : 0
     }
 }
@@ -159,6 +208,30 @@ struct BudgetChannel: Decodable, Identifiable {
     }
 }
 
-struct NoticePayload {
+struct NoticePayload: Decodable {
     let items: [String]
+
+    private enum CodingKeys: String, CodingKey {
+        case items
+    }
+
+    init(items: [String]) {
+        self.items = NoticePayload.normalized(items)
+    }
+
+    init(from decoder: Decoder) throws {
+        if let rawItems = try? decoder.singleValueContainer().decode([String].self) {
+            items = NoticePayload.normalized(rawItems)
+            return
+        }
+
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let rawItems = try container.decode([String].self, forKey: .items)
+        items = NoticePayload.normalized(rawItems)
+    }
+
+    private static func normalized(_ items: [String]) -> [String] {
+        items.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+    }
 }

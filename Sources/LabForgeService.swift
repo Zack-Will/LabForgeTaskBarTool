@@ -42,6 +42,21 @@ struct LabForgeService {
     }
 
     func fetchNotices() async throws -> NoticePayload {
+        do {
+            return try await fetchNoticesJSON()
+        } catch {
+            return try await fetchHomepageNotices()
+        }
+    }
+
+    private func fetchNoticesJSON() async throws -> NoticePayload {
+        let url = URL(string: "https://www.labforge.top/notices.json")!
+        let (data, response) = try await session.data(from: url)
+        try validate(response: response)
+        return try decodeNotices(from: data)
+    }
+
+    private func fetchHomepageNotices() async throws -> NoticePayload {
         let url = URL(string: "https://www.labforge.top/")!
         let (data, response) = try await session.data(from: url)
         try validate(response: response)
@@ -50,17 +65,7 @@ struct LabForgeService {
             throw LabForgeServiceError.invalidNoticePayload
         }
 
-        let pattern = #"const\s+NOTICE_ITEMS\s*=\s*\[(.*?)\];"#
-        let regex = try NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators])
-        let range = NSRange(html.startIndex..<html.endIndex, in: html)
-        guard
-            let match = regex.firstMatch(in: html, options: [], range: range),
-            let itemsRange = Range(match.range(at: 1), in: html)
-        else {
-            throw LabForgeServiceError.invalidNoticePayload
-        }
-
-        let rawItems = String(html[itemsRange])
+        let rawItems = try extractNoticeArray(from: html)
         let itemPattern = #""((?:\\"|[^"])*)""#
         let itemRegex = try NSRegularExpression(pattern: itemPattern)
         let itemRange = NSRange(rawItems.startIndex..<rawItems.endIndex, in: rawItems)
@@ -69,11 +74,12 @@ struct LabForgeService {
             return String(rawItems[captured]).replacingOccurrences(of: #"\""#, with: #"""#)
         }
 
-        guard !notices.isEmpty else {
+        let payload = NoticePayload(items: notices)
+        guard !payload.items.isEmpty else {
             throw LabForgeServiceError.invalidNoticePayload
         }
 
-        return NoticePayload(items: notices)
+        return payload
     }
 
     private func validate(response: URLResponse) throws {
@@ -88,6 +94,35 @@ struct LabForgeService {
         let tail = script[start.upperBound...]
         guard let end = tail.firstIndex(of: ";") else { return nil }
         return tail[..<end].trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func decodeNotices(from data: Data) throws -> NoticePayload {
+        let payload = try JSONDecoder().decode(NoticePayload.self, from: data)
+        guard !payload.items.isEmpty else {
+            throw LabForgeServiceError.invalidNoticePayload
+        }
+        return payload
+    }
+
+    private func extractNoticeArray(from html: String) throws -> String {
+        let patterns = [
+            #"const\s+DEFAULT_NOTICE_ITEMS\s*=\s*\[(.*?)\];"#,
+            #"const\s+NOTICE_ITEMS\s*=\s*\[(.*?)\];"#
+        ]
+        let range = NSRange(html.startIndex..<html.endIndex, in: html)
+
+        for pattern in patterns {
+            let regex = try NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators])
+            guard
+                let match = regex.firstMatch(in: html, options: [], range: range),
+                let itemsRange = Range(match.range(at: 1), in: html)
+            else {
+                continue
+            }
+            return String(html[itemsRange])
+        }
+
+        throw LabForgeServiceError.invalidNoticePayload
     }
 }
 

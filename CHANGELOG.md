@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+## [0.1.3] - 2026-04-11
+
+### Changed
+
+- Added compatibility for the current model status feed schema that uses `s` status values
+- Added direct `notices.json` support with homepage fallback for announcements
+- Changed leaderboard display from top-three only to a nested scroll list of all entries
+- Made refreshes preserve successfully fetched sections when another feed fails
+
 ## [0.1.2] - 2026-03-30
 
 ### Added

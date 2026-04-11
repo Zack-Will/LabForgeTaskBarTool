@@ -1,6 +1,6 @@
-# LabForgeTaskBarTool
+# LabForgeMenuBar
 
-`LabForgeTaskBarTool` is a native macOS menu bar utility for monitoring the public [LabForge](https://www.labforge.top/#model-status) status feeds.
+`LabForgeMenuBar` is a native macOS menu bar utility for monitoring the public [LabForge](https://www.labforge.top/#model-status) status feeds.
 
 It turns the LabForge web dashboard into a lightweight desktop experience: left click opens a monitoring popover, right click exposes quick controls, and the app can optionally launch at login.
 
@@ -22,6 +22,7 @@ The app reads public LabForge endpoints directly:
 - `https://www.labforge.top/model-status.json`
 - `https://www.labforge.top/leaderboard-data.js`
 - `https://www.labforge.top/budget-status.json`
+- `https://www.labforge.top/notices.json`
 
 ## Requirements
 
@@ -100,8 +101,9 @@ Right click:
 ## UI Overview
 
 - `Model Remaining`: budget and remaining capacity cards for GPT and Claude
+- `Announcements`: latest LabForge notices
 - `Recent Status`: health timeline, latency, success rate, and current status badge
-- `Leaderboard`: top three usage ranking, hidden by default and toggled from the menu
+- `Leaderboard`: full usage ranking in a nested scroll list, hidden by default and toggled from the menu
 
 ## Notes
 

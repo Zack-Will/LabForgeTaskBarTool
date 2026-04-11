@@ -49,7 +49,15 @@ final class MenuBarViewModel: ObservableObject {
 
     var menuBarSymbol: String {
         guard let status = modelStatus else { return "bolt.horizontal.circle" }
-        return status.orderedModels.allSatisfy(\.isUp) ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
+        let models = status.orderedModels
+        guard !models.isEmpty else { return "bolt.horizontal.circle" }
+        if models.allSatisfy(\.isUp) {
+            return "checkmark.circle.fill"
+        }
+        if models.contains(where: { $0.status == .error || $0.status == .unknown }) {
+            return "exclamationmark.triangle.fill"
+        }
+        return "dollarsign.circle.fill"
     }
 
     func refresh() async {
@@ -57,23 +65,42 @@ final class MenuBarViewModel: ObservableObject {
         isRefreshing = true
         defer { isRefreshing = false }
 
+        async let status = service.fetchModelStatus()
+        async let leaderboard = service.fetchLeaderboard()
+        async let budget = service.fetchBudgetStatus()
+        async let notices = service.fetchNotices()
+
+        var errors: [String] = []
+
         do {
-            async let status = service.fetchModelStatus()
-            async let leaderboard = service.fetchLeaderboard()
-            async let budget = service.fetchBudgetStatus()
             self.modelStatus = try await status
-            self.leaderboard = try await leaderboard
-            self.budgetStatus = try await budget
-            let fetchedNotices = try? await service.fetchNotices()
-            self.notices = fetchedNotices?.items ?? self.notices
-            self.lastError = nil
         } catch {
-            self.lastError = error.localizedDescription
+            errors.append("Model status: \(error.localizedDescription)")
         }
+
+        do {
+            self.leaderboard = try await leaderboard
+        } catch {
+            errors.append("Leaderboard: \(error.localizedDescription)")
+        }
+
+        do {
+            self.budgetStatus = try await budget
+        } catch {
+            errors.append("Budget: \(error.localizedDescription)")
+        }
+
+        do {
+            self.notices = try await notices.items
+        } catch {
+            // Notices are secondary; keep the previous ticker text when unavailable.
+        }
+
+        self.lastError = errors.isEmpty ? nil : errors.joined(separator: "\n")
     }
 
-    var topThreeEntries: [LeaderboardEntry] {
-        Array((leaderboard?.all ?? []).prefix(3))
+    var leaderboardEntries: [LeaderboardEntry] {
+        leaderboard?.all ?? []
     }
 
     func setLaunchAtLogin(_ enabled: Bool) {
