@@ -8,3 +8,5 @@ dist/
 *.xcworkspace/xcuserdata/
 *.xcodeproj/project.xcworkspace/xcuserdata/
 DerivedData/
+LabForge-py
+.codex

@@ -1,0 +1,20 @@
+{
+  "KPackageStructure": "Plasma/Applet",
+  "KPlugin": {
+    "Authors": [
+      {
+        "Email": "local@example.com",
+        "Name": "Codex"
+      }
+    ],
+    "Category": "System Information",
+    "Description": "LabForge status popup for KDE Plasma",
+    "EnabledByDefault": false,
+    "Icon": "network-server-symbolic",
+    "Id": "org.kde.plasma.labforge",
+    "License": "MIT",
+    "Name": "LabForge Status",
+    "Website": "https://www.labforge.top/#model-status"
+  },
+  "X-Plasma-API-Minimum-Version": "6.0"
+}

@@ -30,6 +30,8 @@ The app reads public LabForge endpoints directly:
 - Xcode 26.4 or newer recommended
 - Swift 6.3 or newer recommended
 
+Plasma widget support is available as a separate implementation under [`plasma/org.kde.plasma.labforge/`](/home/betmul/BETMUL/LabForgeTaskBarTool/plasma/org.kde.plasma.labforge) for use through `Add or Manage Widgets`.
+
 ## Project Structure
 
 ```text
@@ -50,6 +52,10 @@ The app reads public LabForge endpoints directly:
 │   ├── generate_icon.swift
 │   ├── package_app.sh
 │   └── package_dmg.sh
+├── plasma/
+│   └── org.kde.plasma.labforge/
+│       ├── contents/
+│       └── metadata.json
 ├── CHANGELOG.md
 ├── Package.swift
 ├── README.md
@@ -64,6 +70,12 @@ Terminal build:
 
 ```bash
 swift build
+```
+
+Plasma widget install:
+
+```bash
+./scripts/install_plasmoid.sh
 ```
 
 ## Packaging
@@ -97,6 +109,13 @@ Right click:
 - `Show Leaderboard`
 - `Launch at Login`
 - `Quit`
+
+Plasma widget:
+
+- Install with [`scripts/install_plasmoid.sh`](/home/betmul/BETMUL/LabForgeTaskBarTool/scripts/install_plasmoid.sh)
+- Open `Add or Manage Widgets`
+- Search for `LabForge Status`
+- Add it to the top panel for native Plasma popup behavior
 
 ## UI Overview
 
