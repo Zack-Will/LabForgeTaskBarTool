@@ -7,6 +7,7 @@ final class MenuBarViewModel: ObservableObject {
     private enum DefaultsKeys {
         static let showLeaderboard = "showLeaderboard"
         static let showMenuBarText = "showMenuBarText"
+        static let hiddenModelIDs = "hiddenModelIDs"
     }
 
     @Published private(set) var modelStatus: ModelStatusPayload?
@@ -18,6 +19,7 @@ final class MenuBarViewModel: ObservableObject {
     @Published var launchAtLoginEnabled = false
     @Published var showLeaderboard = false
     @Published var showMenuBarText = true
+    @Published var hiddenModelIDs: Set<String> = []
 
     private let service = LabForgeService()
     private var refreshTask: Task<Void, Never>?
@@ -26,6 +28,7 @@ final class MenuBarViewModel: ObservableObject {
         launchAtLoginEnabled = SMAppService.mainApp.status == .enabled
         showLeaderboard = UserDefaults.standard.object(forKey: DefaultsKeys.showLeaderboard) as? Bool ?? false
         showMenuBarText = UserDefaults.standard.object(forKey: DefaultsKeys.showMenuBarText) as? Bool ?? true
+        hiddenModelIDs = Set(UserDefaults.standard.stringArray(forKey: DefaultsKeys.hiddenModelIDs) ?? [])
 
         refreshTask = Task {
             await refresh()
@@ -40,16 +43,20 @@ final class MenuBarViewModel: ObservableObject {
         refreshTask?.cancel()
     }
 
+    var visibleModels: [MonitoredModelSummary] {
+        modelStatus?.orderedModels.filter { !hiddenModelIDs.contains($0.id) } ?? []
+    }
+
     var menuBarTitle: String {
-        guard let status = modelStatus else { return "LabForge --/--" }
-        let total = status.orderedModels.count
-        let upCount = status.orderedModels.filter(\.isUp).count
+        let models = visibleModels
+        guard !models.isEmpty else { return "LabForge --/--" }
+        let total = models.count
+        let upCount = models.filter(\.isUp).count
         return "LabForge \(upCount)/\(total)"
     }
 
     var menuBarSymbol: String {
-        guard let status = modelStatus else { return "bolt.horizontal.circle" }
-        let models = status.orderedModels
+        let models = visibleModels
         guard !models.isEmpty else { return "bolt.horizontal.circle" }
         if models.allSatisfy(\.isUp) {
             return "checkmark.circle.fill"
@@ -131,5 +138,14 @@ final class MenuBarViewModel: ObservableObject {
     func setShowMenuBarText(_ enabled: Bool) {
         showMenuBarText = enabled
         UserDefaults.standard.set(enabled, forKey: DefaultsKeys.showMenuBarText)
+    }
+
+    func toggleModelVisibility(_ modelID: String) {
+        if hiddenModelIDs.contains(modelID) {
+            hiddenModelIDs.remove(modelID)
+        } else {
+            hiddenModelIDs.insert(modelID)
+        }
+        UserDefaults.standard.set(Array(hiddenModelIDs), forKey: DefaultsKeys.hiddenModelIDs)
     }
 }

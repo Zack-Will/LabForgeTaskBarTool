@@ -12,18 +12,13 @@ struct ModelStatusPayload: Decodable {
     }
 
     var orderedModels: [MonitoredModelSummary] {
-        let order = [
-            "claude-opus-4-6",
-            "claude-sonnet-4-6",
-            "claude-haiku-4-5",
-            "gpt-5.3-codex",
-            "gpt-5.4"
-        ]
-
-        return order.compactMap { id in
-            guard let model = models[id] else { return nil }
-            return MonitoredModelSummary(id: id, model: model)
-        }
+        models.map { MonitoredModelSummary(id: $0.key, model: $0.value) }
+            .sorted { a, b in
+                if a.provider != b.provider {
+                    return a.provider < b.provider
+                }
+                return a.name < b.name
+            }
     }
 }
 

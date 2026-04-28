@@ -202,8 +202,8 @@ struct MenuBarContentView: View {
             Text("Recent Status")
                 .font(.subheadline.weight(.semibold))
 
-            if let payload = viewModel.modelStatus {
-                ForEach(Array(payload.orderedModels.enumerated()), id: \.element.id) { _, model in
+            if viewModel.modelStatus != nil {
+                ForEach(Array(viewModel.visibleModels.enumerated()), id: \.element.id) { _, model in
                     VStack(alignment: .leading, spacing: 8) {
                         HStack(alignment: .center) {
                             VStack(alignment: .leading, spacing: 2) {
@@ -311,7 +311,7 @@ struct MenuBarContentView: View {
 
             HStack {
                 Button("Open LabForge") {
-                    if let url = URL(string: "https://www.labforge.top/#model-status") {
+                    if let url = URL(string: "https://zju.labforge.top/#model-status") {
                         NSWorkspace.shared.open(url)
                     }
                 }

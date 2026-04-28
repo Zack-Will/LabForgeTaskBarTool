@@ -1,6 +1,6 @@
 # LabForgeMenuBar
 
-`LabForgeMenuBar` is a native macOS menu bar utility for monitoring the public [LabForge](https://www.labforge.top/#model-status) status feeds.
+`LabForgeMenuBar` is a native macOS menu bar utility for monitoring the public [LabForge](https://zju.labforge.top/#model-status) status feeds.
 
 It turns the LabForge web dashboard into a lightweight desktop experience: left click opens a monitoring popover, right click exposes quick controls, and the app can optionally launch at login.
 
@@ -19,10 +19,10 @@ It turns the LabForge web dashboard into a lightweight desktop experience: left 
 
 The app reads public LabForge endpoints directly:
 
-- `https://www.labforge.top/model-status.json`
-- `https://www.labforge.top/leaderboard-data.js`
-- `https://www.labforge.top/budget-status.json`
-- `https://www.labforge.top/notices.json`
+- `https://zju.labforge.top/model-status.json`
+- `https://zju.labforge.top/leaderboard-data.js`
+- `https://zju.labforge.top/budget-status.json`
+- `https://zju.labforge.top/notices.json`
 
 ## Requirements
 

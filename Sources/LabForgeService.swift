@@ -10,7 +10,7 @@ struct LabForgeService {
     }()
 
     func fetchModelStatus() async throws -> ModelStatusPayload {
-        let url = URL(string: "https://www.labforge.top/model-status.json")!
+        let url = URL(string: "https://zju.labforge.top/model-status.json")!
         let (data, response) = try await session.data(from: url)
         try validate(response: response)
         let decoder = JSONDecoder()
@@ -18,7 +18,7 @@ struct LabForgeService {
     }
 
     func fetchLeaderboard() async throws -> LeaderboardPayload {
-        let url = URL(string: "https://www.labforge.top/leaderboard-data.js")!
+        let url = URL(string: "https://zju.labforge.top/leaderboard-data.js")!
         let (data, response) = try await session.data(from: url)
         try validate(response: response)
 
@@ -34,7 +34,7 @@ struct LabForgeService {
     }
 
     func fetchBudgetStatus() async throws -> BudgetStatusPayload {
-        let url = URL(string: "https://www.labforge.top/budget-status.json")!
+        let url = URL(string: "https://zju.labforge.top/budget-status.json")!
         let (data, response) = try await session.data(from: url)
         try validate(response: response)
         let decoder = JSONDecoder()
@@ -50,14 +50,14 @@ struct LabForgeService {
     }
 
     private func fetchNoticesJSON() async throws -> NoticePayload {
-        let url = URL(string: "https://www.labforge.top/notices.json")!
+        let url = URL(string: "https://zju.labforge.top/notices.json")!
         let (data, response) = try await session.data(from: url)
         try validate(response: response)
         return try decodeNotices(from: data)
     }
 
     private func fetchHomepageNotices() async throws -> NoticePayload {
-        let url = URL(string: "https://www.labforge.top/")!
+        let url = URL(string: "https://zju.labforge.top/")!
         let (data, response) = try await session.data(from: url)
         try validate(response: response)
 

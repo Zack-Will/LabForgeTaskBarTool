@@ -62,6 +62,9 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         menuBarTextItem.target = self
         menuBarTextItem.state = viewModel.showMenuBarText ? .on : .off
 
+        let modelsMenuItem = NSMenuItem(title: "Models", action: nil, keyEquivalent: "")
+        modelsMenuItem.submenu = NSMenu()
+
         let quitItem = NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
 
@@ -71,6 +74,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
             .separator(),
             menuBarTextItem,
             leaderboardItem,
+            modelsMenuItem,
             launchAtLoginItem,
             .separator(),
             quitItem
@@ -120,6 +124,13 @@ final class MenuBarController: NSObject, NSMenuDelegate {
                 self?.refreshMenuState()
             }
             .store(in: &cancellables)
+
+        viewModel.$hiddenModelIDs
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.refreshStatusButton()
+            }
+            .store(in: &cancellables)
     }
 
     private func refreshStatusButton() {
@@ -167,9 +178,32 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
     private func showContextMenu(_ sender: NSStatusBarButton) {
         refreshMenuState()
+        rebuildModelsSubmenu()
         statusItem.menu = contextMenu
         sender.performClick(nil)
         statusItem.menu = nil
+    }
+
+    private func rebuildModelsSubmenu() {
+        guard let modelsMenuItem = contextMenu.items.first(where: { $0.title == "Models" }),
+              let submenu = modelsMenuItem.submenu else { return }
+
+        submenu.removeAllItems()
+
+        let allModels = viewModel.modelStatus?.orderedModels ?? []
+        for model in allModels {
+            let item = NSMenuItem(title: model.name, action: #selector(toggleModelVisibility(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = model.id
+            item.state = viewModel.hiddenModelIDs.contains(model.id) ? .off : .on
+            submenu.addItem(item)
+        }
+
+        if allModels.isEmpty {
+            let placeholder = NSMenuItem(title: "No models available", action: nil, keyEquivalent: "")
+            placeholder.isEnabled = false
+            submenu.addItem(placeholder)
+        }
     }
 
     @objc
@@ -179,7 +213,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
     @objc
     private func openLabForge() {
-        if let url = URL(string: "https://www.labforge.top/#model-status") {
+        if let url = URL(string: "https://zju.labforge.top/#model-status") {
             NSWorkspace.shared.open(url)
         }
     }
@@ -202,5 +236,11 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     @objc
     private func quit() {
         NSApplication.shared.terminate(nil)
+    }
+
+    @objc
+    private func toggleModelVisibility(_ sender: NSMenuItem) {
+        guard let modelID = sender.representedObject as? String else { return }
+        viewModel.toggleModelVisibility(modelID)
     }
 }
